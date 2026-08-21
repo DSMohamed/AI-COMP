@@ -1,0 +1,89 @@
+# ⚙️ Configuration Reference
+
+The application is configured through a central YAML file (e.g. `config.yaml` or `config.example.yaml`), validated at runtime by Pydantic models in [`gaming_ai.app.config`](../gaming_ai/app/config.py).
+
+---
+
+## 📄 Full Schema
+
+```yaml
+# ==============================================================================
+# Local AI Gaming Companion Configuration
+# ==============================================================================
+
+# LLM Reasoning Engine (Brain)
+ai:
+  provider: "ollama"                   # Provider type: 'ollama' or 'mock'
+  host: "http://127.0.0.1:11434"      # Ollama server API URL
+  model: "llama3.2:3b"                 # Fast 3B model (or 'qwen2.5-coder:7b')
+  temperature: 0.7                     # Conversational creativity (0.0 to 1.0)
+  max_tokens: 150                      # Keep gaming responses concise and punchy
+  request_timeout: 30.0                # Request timeout in seconds
+
+# Speech Recognition & Input
+speech:
+  input_device: null                  # Audio input device index (null = system default)
+  sample_rate: 16000                  # Standard Whisper sample rate
+  stt_model: "base.en"                # faster-whisper model ('tiny.en', 'base.en', 'small.en')
+  device: "auto"                      # 'cuda' or 'cpu'
+  compute_type: "int8"                # 'int8' or 'float16' for low VRAM
+  vad_mode: "hybrid"                  # 'energy', 'silero', or 'hybrid'
+  vad_silence_duration: 0.8           # Seconds of silence to trigger end-of-speech
+  vad_energy_threshold: 0.015         # Normalized energy threshold for microphone gating
+
+# Text-to-Speech Output
+tts:
+  engine: "pyttsx3"                   # TTS engine ('pyttsx3', 'piper', 'kokoro')
+  rate: 185                           # Words per minute / speech speed
+  volume: 1.0                         # Audio volume (0.0 to 1.0)
+  voice_index: 0                      # System voice selector index
+  interrupt_on_speech: true           # Immediately cut off TTS when user speaks
+
+# AI Gaming Personality
+personality:
+  name: "Glitch"                      # Companion name
+  sarcasm: 75                         # Sarcasm intensity (0 - 100)
+  humor: 80                           # Humor intensity (0 - 100)
+  energy: 75                          # Hype / Energy level (0 - 100)
+  talkativeness: 50                   # Autonomous commentary frequency (0 - 100)
+  supportiveness: 65                  # Encouraging vs trolling balance (0 - 100)
+  game_slang: true                    # Enable gamer terms ('cooked', 'clutch', 'diff')
+  custom_system_prompt: ""            # Optional custom prompt override
+
+# Memory System (Phases 6 & 7)
+memory:
+  enabled: true
+  database_path: "data/memory.sqlite"
+  short_term_history_limit: 10
+
+# Vision System (Phases 2-5)
+vision:
+  enabled: false
+  model: "qwen2-vl:2b"
+  capture_fps: 1
+  resolution: "1280x720"
+  webcam_enabled: false
+
+# Privacy Controls
+privacy:
+  save_audio_recordings: false
+  save_screen_frames: false
+  save_webcam_frames: false
+```
+
+---
+
+## 🎙️ Selecting Audio Input Devices
+
+To list available audio devices on Windows:
+```python
+import sounddevice as sd
+print(sd.query_devices())
+```
+
+Find your microphone's device index (e.g. `2`) and set it in your `config.yaml`:
+```yaml
+speech:
+  input_device: 2
+```
+Leave as `null` to use your Windows default recording device.

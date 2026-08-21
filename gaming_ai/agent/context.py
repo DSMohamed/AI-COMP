@@ -1,0 +1,51 @@
+"""Context engine for managing short-term history and prompt assembly."""
+
+from __future__ import annotations
+
+from typing import List, Optional
+from collections import deque
+
+from gaming_ai.agent.personality import PersonalityEngine
+from gaming_ai.models.provider import Message
+
+
+class ContextEngine:
+    """Aggregates conversation history, personality prompt, and game context."""
+
+    def __init__(
+        self,
+        personality_engine: Optional[PersonalityEngine] = None,
+        history_limit: int = 10,
+    ) -> None:
+        self.personality = personality_engine or PersonalityEngine()
+        self.history_limit = history_limit
+        self._history: deque[Message] = deque(maxlen=history_limit * 2)
+        self.current_game: Optional[str] = None
+
+    def add_user_message(self, text: str) -> None:
+        """Add a player utterance to history."""
+        self._history.append(Message(role="user", content=text))
+
+    def add_assistant_message(self, text: str) -> None:
+        """Add companion response to history."""
+        self._history.append(Message(role="assistant", content=text))
+
+    def clear_history(self) -> None:
+        """Reset short-term conversation history."""
+        self._history.clear()
+
+    def build_context(self, current_user_input: Optional[str] = None) -> List[Message]:
+        """
+        Assemble the complete message payload for the LLM.
+        """
+        system_prompt = self.personality.build_system_prompt(current_game=self.current_game)
+        messages: List[Message] = [Message(role="system", content=system_prompt)]
+
+        # Append historical turns
+        messages.extend(list(self._history))
+
+        # Append current user input if provided and not already in history
+        if current_user_input:
+            messages.append(Message(role="user", content=current_user_input))
+
+        return messages
