@@ -121,6 +121,8 @@ Detailed guides and API references are available in the [`docs/`](docs/index.md)
 
 ## 🗺️ Roadmap & Phases
 
+See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development phases.
+
 - [x] **Phase 0**: Research, VRAM budgeting, and architecture design.
 - [x] **Phase 1**: Voice Prototype (Microphone + VAD + faster-whisper + Ollama + TTS + Interruption).
 - [ ] **Phase 2**: Vision Prototype (DXGI frame grabber + VLM screen analysis).
@@ -130,6 +132,9 @@ Detailed guides and API references are available in the [`docs/`](docs/index.md)
 - [ ] **Phase 6**: Game-specific RAG knowledge base (ChromaDB).
 - [ ] **Phase 7**: SQLite persistent multi-session memory.
 - [ ] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
+- [ ] **Phase 9**: Sandboxed computer control tools.
+- [ ] **Phase 10**: Real-time telemetry overlay & VRAM optimization.
+- [ ] **Phase 11**: Optional LoRA fine-tuning & voice cloning.
 
 ---
 

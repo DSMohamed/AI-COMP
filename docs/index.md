@@ -22,5 +22,6 @@ Welcome to the technical documentation for the **Local AI Gaming Companion**, a 
 
 * **Source Code**: [`gaming_ai/`](../gaming_ai/)
 * **Configuration Template**: [`config.example.yaml`](../config.example.yaml)
+* **Phases Checklist**: [Development Checklist](../CHECKLIST.md)
 * **Open Source License**: [MIT License](../LICENSE)
 * **Contributing**: [Contribution Guidelines](../CONTRIBUTING.md)
