@@ -10,6 +10,7 @@ Welcome to the technical documentation for the **Local AI Gaming Companion**, a 
 |---|---|
 | [🏗️ System Architecture](architecture.md) | High-level system architecture, decoupled async worker pipelines, and VRAM budgeting. |
 | [🎙️ Speech & Voice Pipeline](speech_pipeline.md) | Microphone capture, VAD segmentation, `faster-whisper` STT, streaming TTS, and instant interruption. |
+| [👁️ Vision & Screen Pipeline](vision_pipeline.md) | Screen capture, frame differencing, and VLM (`llava`/`qwen2-vl`) structured scene analysis. |
 | [🧠 Models & Providers](models_and_providers.md) | Ollama LLM provider abstraction, model configuration (`llama3.2:3b`, `qwen2.5:7b`), and custom provider guide. |
 | [🎭 Personality & Agent](personality_and_agent.md) | Gaming companion persona, tone sliders (sarcasm, humor, energy, slang), and context aggregation. |
 | [⚙️ Configuration Guide](configuration.md) | Detailed schema reference for `config.yaml` and runtime customization. |

@@ -16,12 +16,14 @@ from gaming_ai.speech.audio_player import InterruptibleAudioPlayer
 from gaming_ai.speech.microphone import MicrophoneStream
 from gaming_ai.speech.stt import SpeechToText
 from gaming_ai.speech.tts import TextToSpeechEngine
+from gaming_ai.vision.screen_capture import ScreenCapture
+from gaming_ai.vision.vision_model import BaseVisionModel, OllamaVisionModel, VisionAnalysisResult
 
 logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception, reasoning, speech, and interruption handling."""
+    """Orchestrates perception (audio + vision), reasoning, speech, and interruption handling."""
 
     def __init__(
         self,
@@ -29,6 +31,8 @@ class GamingCompanionAgent:
         llm_provider: Optional[BaseLLMProvider] = None,
         stt: Optional[SpeechToText] = None,
         tts: Optional[TextToSpeechEngine] = None,
+        vision_model: Optional[BaseVisionModel] = None,
+        screen_capture: Optional[ScreenCapture] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -62,6 +66,14 @@ class GamingCompanionAgent:
         )
         self.mic: Optional[MicrophoneStream] = None
 
+        # Vision Subsystem
+        self.screen_capture = screen_capture or ScreenCapture()
+        self.vision_model = vision_model or OllamaVisionModel(
+            model_name=self.config.vision.model if self.config.vision.model != "qwen2-vl:2b" else "llava:latest",
+            host=self.config.ai.host,
+            timeout=45.0,
+        )
+
     def _on_speech_started(self) -> None:
         """Callback invoked immediately when user begins speaking into the microphone."""
         if self.config.tts.interrupt_on_speech:
@@ -83,7 +95,49 @@ class GamingCompanionAgent:
             self.mic.stop()
             self.mic = None
 
-    async def respond_to_text(self, user_text: str, speak: bool = True) -> str:
+    def _is_visual_query(self, text: str) -> bool:
+        """Check if user query is asking about the current screen or game view."""
+        visual_triggers = [
+            "what is happening",
+            "what's happening",
+            "what do you see",
+            "look at this",
+            "look at my screen",
+            "what's on my screen",
+            "what is on my screen",
+            "can you see",
+            "check my screen",
+            "what is that",
+            "am i cooked",
+            "where am i",
+        ]
+        lower = text.lower()
+        return any(t in lower for t in visual_triggers)
+
+    async def observe_screen(
+        self, custom_prompt: Optional[str] = None, structured: bool = True
+    ) -> VisionAnalysisResult:
+        """Capture the screen and analyze it with the vision-language model."""
+        start_time = time.perf_counter()
+        img_b64 = await asyncio.to_thread(self.screen_capture.capture_base64)
+        result = await self.vision_model.analyze(
+            image_base64=img_b64, prompt=custom_prompt, structured=structured
+        )
+        self.context.update_vision_context(
+            f"Scene: {result.scene}. State: {result.player_state}. Description: {result.description}"
+        )
+        total_time = (time.perf_counter() - start_time) * 1000.0
+        logger.info(
+            "Screen Observation: '%s' (Scene: %s, Latency: %.1fms)",
+            result.description,
+            result.scene,
+            total_time,
+        )
+        return result
+
+    async def respond_to_text(
+        self, user_text: str, speak: bool = True, include_screen: Optional[bool] = None
+    ) -> str:
         """
         Process a text query from the user, stream LLM response, and speak it.
 
@@ -92,6 +146,14 @@ class GamingCompanionAgent:
         """
         start_time = time.perf_counter()
         logger.info("Player: '%s'", user_text)
+
+        # Automatically observe screen if query is visual or requested
+        should_observe = include_screen if include_screen is not None else self._is_visual_query(user_text)
+        if should_observe:
+            try:
+                await self.observe_screen()
+            except Exception as e:
+                logger.warning("Screen observation failed: %s", e)
 
         messages = self.context.build_context(current_user_input=user_text)
 

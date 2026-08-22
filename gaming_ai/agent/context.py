@@ -21,6 +21,7 @@ class ContextEngine:
         self.history_limit = history_limit
         self._history: deque[Message] = deque(maxlen=history_limit * 2)
         self.current_game: Optional[str] = None
+        self.latest_vision_context: Optional[str] = None
 
     def add_user_message(self, text: str) -> None:
         """Add a player utterance to history."""
@@ -29,6 +30,10 @@ class ContextEngine:
     def add_assistant_message(self, text: str) -> None:
         """Add companion response to history."""
         self._history.append(Message(role="assistant", content=text))
+
+    def update_vision_context(self, visual_description: str) -> None:
+        """Update the latest perceived screen state."""
+        self.latest_vision_context = visual_description
 
     def clear_history(self) -> None:
         """Reset short-term conversation history."""
@@ -39,6 +44,10 @@ class ContextEngine:
         Assemble the complete message payload for the LLM.
         """
         system_prompt = self.personality.build_system_prompt(current_game=self.current_game)
+        
+        if self.latest_vision_context:
+            system_prompt += f"\n\nCURRENT SCREEN OBSERVATION:\n{self.latest_vision_context}"
+
         messages: List[Message] = [Message(role="system", content=system_prompt)]
 
         # Append historical turns

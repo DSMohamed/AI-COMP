@@ -7,8 +7,8 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 ## 📊 Summary Status
 
 * **Total Phases**: 12 (Phases 0 through 11)
-* **Completed Phases**: 2 / 12 (Phase 0, Phase 1 + Core Personality)
-* **In Progress / Next Up**: Phase 2 (Vision Prototype)
+* **Completed Phases**: 3 / 12 (Phase 0, Phase 1, Phase 2)
+* **In Progress / Next Up**: Phase 3 (Webcam Integration)
 * **Target Hardware**: NVIDIA GeForce RTX 3070 (8 GB VRAM) — Windows 10/11
 
 ---
@@ -34,16 +34,17 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 
 ---
 
-### ⏳ Phase 2 — Vision Prototype (NEXT UP)
-- [ ] Low-overhead Windows screen capture (DXGI Desktop Duplication / Windows Graphics Capture / MSS).
-- [ ] Image resizing and optimization pipeline (1280x720 downscaled frames).
-- [ ] VLM integration (lightweight vision-language model e.g., `qwen2-vl:2b` or `moondream2` / `llava`).
-- [ ] Visual query command (*"What is happening on my screen?"*).
-- [ ] Automated tests for frame grabber and VLM parser.
+### ✅ Phase 2 — Vision Prototype (COMPLETED)
+- [x] Low-overhead Windows screen capture (`ScreenCapture` via `mss` / `PIL` with resolution downscaling).
+- [x] Image resizing and optimization pipeline (1280x720 downscaled JPEG compression).
+- [x] VLM integration (`OllamaVisionModel` supporting `llava:latest` and `qwen2-vl`).
+- [x] Frame differencing engine (`FrameAnalyzer` downsampled grayscale MSE $<1\text{ms}$).
+- [x] Visual query handling (*"What is happening on my screen?"*, *"What do you see?"*).
+- [x] Automated tests for frame grabber and VLM parser (15 passing tests total).
 
 ---
 
-### ⏳ Phase 3 — Webcam Integration (REMAINING)
+### ⏳ Phase 3 — Webcam Integration (NEXT UP)
 - [ ] OpenCV webcam capture module with configurable FPS (default: 1 FPS).
 - [ ] Player engagement & facial reaction parser (smiling, surprise, frustration).
 - [ ] Privacy safeguards (strictly in-memory frames, zero disk storage, clear UI camera toggle).
