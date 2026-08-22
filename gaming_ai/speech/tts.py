@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import logging
 import re
 import threading
 import time
 from typing import AsyncIterator, List, Optional
 import urllib.request
-import json
 
 import sounddevice as sd
 
@@ -54,6 +54,27 @@ class TextToSpeechEngine:
         self.player = player or InterruptibleAudioPlayer()
         self._lock = threading.Lock()
 
+        # Dedicated background asyncio worker loop for thread-safe edge-tts synthesis
+        self._async_loop: Optional[asyncio.AbstractEventLoop] = None
+        self._async_thread: Optional[threading.Thread] = None
+        if HAS_EDGE_TTS:
+            self._init_async_worker()
+
+    def _init_async_worker(self) -> None:
+        """Initialize a persistent background asyncio thread for edge-tts."""
+        try:
+            self._async_loop = asyncio.new_event_loop()
+            def _worker_target(loop: asyncio.AbstractEventLoop) -> None:
+                asyncio.set_event_loop(loop)
+                loop.run_forever()
+
+            self._async_thread = threading.Thread(
+                target=_worker_target, args=(self._async_loop,), daemon=True, name="EdgeTTS-Worker"
+            )
+            self._async_thread.start()
+        except Exception as e:
+            logger.warning("Could not initialize dedicated async worker for TTS: %s", e)
+
     def _clean_text_for_speech(self, text: str) -> str:
         """Strip raw markdown formatting and normalize gaming expressions."""
         clean = re.sub(r"\*([^*]+)\*", r"\1", text)  # remove *italics*
@@ -61,43 +82,53 @@ class TextToSpeechEngine:
         clean = re.sub(r"`([^`]+)`", r"\1", clean)  # remove `code`
         return clean.strip()
 
-    def _synthesize_edge_tts(self, text: str) -> None:
-        """Synthesize ultra-realistic neural speech via edge-tts."""
-        async def _synth():
-            try:
-                # Rate offset string (e.g. "+5%", "-10%")
-                rate_str = "+0%"
-                if self.rate > 185:
-                    pct = min(50, int(((self.rate - 185) / 185) * 100))
-                    rate_str = f"+{pct}%"
-                elif self.rate < 185:
-                    pct = min(50, int(((185 - self.rate) / 185) * 100))
-                    rate_str = f"-{pct}%"
+    def _synthesize_edge_tts_bytes(self, text: str) -> Optional[bytes]:
+        """Synthesize audio bytes using edge-tts on the dedicated background loop."""
+        if not HAS_EDGE_TTS or not self._async_loop or not self._async_loop.is_running():
+            return None
 
-                comm = edge_tts.Communicate(text=text, voice=self.voice, rate=rate_str)
-                buf = bytearray()
-                async for chunk in comm.stream():
-                    if chunk["type"] == "audio":
-                        buf.extend(chunk["data"])
+        # Rate offset string (e.g. "+5%", "-10%")
+        rate_str = "+0%"
+        if self.rate > 185:
+            pct = min(50, int(((self.rate - 185) / 185) * 100))
+            rate_str = f"+{pct}%"
+        elif self.rate < 185:
+            pct = min(50, int(((185 - self.rate) / 185) * 100))
+            rate_str = f"-{pct}%"
 
-                if buf and not self.player._interrupted.is_set():
-                    data, sr = sf.read(io.BytesIO(buf), dtype="float32")
-                    sd.play(data * self.volume, sr)
-                    # Block thread until finished or interrupted
-                    while sd.get_stream().active:
-                        if self.player._interrupted.is_set():
-                            sd.stop()
-                            break
-                        time.sleep(0.02)
-            except Exception as e:
-                logger.warning("edge-tts synthesis failed, falling back to pyttsx3: %s", e)
-                self._synthesize_pyttsx3(text)
+        async def _synth_coro() -> bytes:
+            comm = edge_tts.Communicate(text=text, voice=self.voice, rate=rate_str)
+            buf = bytearray()
+            async for chunk in comm.stream():
+                if chunk["type"] == "audio":
+                    buf.extend(chunk["data"])
+            return bytes(buf)
 
-        loop = asyncio.new_event_loop()
         try:
-            loop.run_until_complete(_synth())
-        finally:
-            loop.close()
+            future = asyncio.run_coroutine_threadsafe(_synth_coro(), self._async_loop)
+            return future.result(timeout=10.0)
+        except Exception as e:
+            logger.error("Edge-TTS synthesis error: %s", e)
+            return None
+
+    def _synthesize_edge_tts(self, text: str) -> None:
+        """Synthesize and play ultra-realistic neural speech via edge-tts."""
+        try:
+            audio_bytes = self._synthesize_edge_tts_bytes(text)
+            if audio_bytes and not self.player._interrupted.is_set():
+                data, sr = sf.read(io.BytesIO(audio_bytes), dtype="float32")
+                sd.play(data * self.volume, sr)
+                while sd.get_stream().active:
+                    if self.player._interrupted.is_set():
+                        sd.stop()
+                        break
+                    time.sleep(0.02)
+            elif not audio_bytes:
+                logger.warning("edge-tts returned no audio, falling back to pyttsx3")
+                self._synthesize_pyttsx3(text)
+        except Exception as e:
+            logger.warning("edge-tts playback failed: %s, falling back to pyttsx3", e)
+            self._synthesize_pyttsx3(text)
 
     def _synthesize_alltalk(self, text: str) -> None:
         """Synthesize through local Coqui XTTS / AllTalk TTS Web API."""
