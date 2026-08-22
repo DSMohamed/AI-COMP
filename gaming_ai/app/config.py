@@ -33,7 +33,8 @@ class SpeechConfig(BaseModel):
 
 class TTSConfig(BaseModel):
     """Configuration for Text-to-Speech output."""
-    engine: str = Field(default="pyttsx3", description="TTS backend: 'pyttsx3', 'piper', etc.")
+    engine: str = Field(default="edge-tts", description="TTS backend: 'edge-tts', 'pyttsx3', etc.")
+    voice: str = Field(default="en-US-ChristopherNeural", description="Neural voice identifier (e.g. en-US-ChristopherNeural, en-US-GuyNeural, en-US-JennyNeural)")
     rate: int = Field(default=185, ge=50, le=400, description="Speech rate in WPM")
     volume: float = Field(default=1.0, ge=0.0, le=1.0)
     voice_index: int = Field(default=0, ge=0)

@@ -22,12 +22,13 @@ speech:
   vad_silence_duration: 0.8           # Seconds of silence to trigger end-of-speech
   vad_energy_threshold: 0.015         # Normalized energy threshold for microphone gating
 
-# Text-to-Speech Output
+# Text-to-Speech Output (Human Neural Voices)
 tts:
-  engine: "pyttsx3"                   # TTS engine ('pyttsx3', 'piper', 'kokoro')
+  engine: "edge-tts"                  # 'edge-tts' (Ultra-realistic human neural voice) or 'pyttsx3' (offline)
+  voice: "en-US-ChristopherNeural"    # Options: en-US-ChristopherNeural, en-US-GuyNeural, en-US-JennyNeural, en-US-AnaNeural, en-GB-RyanNeural
   rate: 185                           # Words per minute / speech speed
   volume: 1.0                         # Audio volume (0.0 to 1.0)
-  voice_index: 0                      # System voice selector index
+  voice_index: 0                      # System voice selector index (pyttsx3 fallback)
   interrupt_on_speech: true           # Immediately cut off TTS when user speaks
 
 # AI Gaming Personality

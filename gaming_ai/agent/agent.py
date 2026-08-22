@@ -95,6 +95,7 @@ class GamingCompanionAgent:
         self.player = InterruptibleAudioPlayer()
         self.tts = tts or TextToSpeechEngine(
             engine_type=self.config.tts.engine,
+            voice=self.config.tts.voice,
             rate=self.config.tts.rate,
             volume=self.config.tts.volume,
             voice_index=self.config.tts.voice_index,
