@@ -75,6 +75,13 @@ class PrivacyConfig(BaseModel):
     save_webcam_frames: bool = Field(default=False)
 
 
+class ToolsConfig(BaseModel):
+    """Configuration for sandboxed computer control tools."""
+    enabled: bool = Field(default=True)
+    allow_privileged: bool = Field(default=False)
+    screenshots_dir: str = Field(default="data/screenshots")
+
+
 class AppConfig(BaseModel):
     """Root application configuration."""
     ai: AIConfig = Field(default_factory=AIConfig)
@@ -83,6 +90,7 @@ class AppConfig(BaseModel):
     personality: PersonalityConfig = Field(default_factory=PersonalityConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     vision: VisionConfig = Field(default_factory=VisionConfig)
+    tools: ToolsConfig = Field(default_factory=ToolsConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
 
     @classmethod

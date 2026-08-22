@@ -19,6 +19,14 @@ from gaming_ai.speech.tts import TextToSpeechEngine
 from gaming_ai.agent.decision import DecisionEngine
 from gaming_ai.memory.manager import MemoryManager
 from gaming_ai.rag.retriever import RAGRetriever
+from gaming_ai.tools.builtin import (
+    BrowserGuideTool,
+    ClipboardTool,
+    ScreenshotTool,
+    TimerTool,
+    VolumeControlTool,
+)
+from gaming_ai.tools.registry import ToolRegistry
 from gaming_ai.vision.event_detector import EventDetector, GameEvent
 from gaming_ai.vision.frame_analyzer import FrameAnalyzer
 from gaming_ai.vision.screen_capture import ScreenCapture
@@ -30,7 +38,7 @@ logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception (audio + screen + webcam), knowledge retrieval (RAG), persistent memory, and speech."""
+    """Orchestrates perception (audio + screen + webcam), tools, RAG, memory, and speech."""
 
     def __init__(
         self,
@@ -47,6 +55,7 @@ class GamingCompanionAgent:
         decision_engine: Optional[DecisionEngine] = None,
         retriever: Optional[RAGRetriever] = None,
         memory: Optional[MemoryManager] = None,
+        tools: Optional[ToolRegistry] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -59,6 +68,18 @@ class GamingCompanionAgent:
         self.memory = memory or (MemoryManager() if self.config.memory.enabled else None)
         if self.memory and not self.memory.current_session:
             self.memory.start_session(game="general")
+
+        # Sandboxed Computer Control Tools (Phase 9)
+        self.tools = tools or ToolRegistry(
+            enabled=self.config.tools.enabled,
+            allow_privileged=self.config.tools.allow_privileged,
+        )
+        # Register default tools
+        self.tools.register(ScreenshotTool())
+        self.tools.register(TimerTool())
+        self.tools.register(BrowserGuideTool())
+        self.tools.register(VolumeControlTool())
+        self.tools.register(ClipboardTool())
 
         # Initialize LLM Provider
         self.llm = llm_provider or OllamaProvider(
@@ -192,6 +213,39 @@ class GamingCompanionAgent:
         lower = text.lower()
         return any(t in lower for t in visual_triggers)
 
+    async def _handle_tool_intent(self, text: str) -> Optional[str]:
+        """Detect and execute tool commands if user requests them."""
+        lower = text.lower()
+        if not self.tools or not self.tools.enabled:
+            return None
+
+        # Screenshot intent
+        if any(w in lower for w in ("take a screenshot", "take screenshot", "grab screenshot", "screenshot that", "clip that")):
+            res = await self.tools.execute("take_screenshot")
+            return res.output if res.success else res.error
+
+        # Timer intent
+        if "timer" in lower and ("set" in lower or "start" in lower):
+            import re
+            match = re.search(r"(\d+)\s*(sec|second|min|minute)", lower)
+            seconds = 60
+            if match:
+                val, unit = int(match.group(1)), match.group(2)
+                seconds = val * 60 if "min" in unit else val
+            res = await self.tools.execute("set_timer", seconds=seconds, label="Player Alert")
+            return res.output if res.success else res.error
+
+        # Volume intent
+        if "volume" in lower and ("set" in lower or "change" in lower):
+            import re
+            match = re.search(r"(\d+)", lower)
+            if match:
+                vol = int(match.group(1))
+                res = await self.tools.execute("set_volume", volume=vol)
+                return res.output if res.success else res.error
+
+        return None
+
     async def observe_screen(
         self, custom_prompt: Optional[str] = None, structured: bool = True
     ) -> VisionAnalysisResult:
@@ -250,6 +304,11 @@ class GamingCompanionAgent:
                 self.context.update_memory_context(mem_block)
             except Exception as e:
                 logger.warning("Memory retrieval failed: %s", e)
+
+        # Check for tool intent (e.g. screenshot, timer, browser guide)
+        tool_feedback = await self._handle_tool_intent(user_text)
+        if tool_feedback:
+            user_text += f"\n[SYSTEM: Executed tool action: {tool_feedback}]"
 
         messages = self.context.build_context(current_user_input=user_text)
 
