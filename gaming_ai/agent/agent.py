@@ -16,6 +16,9 @@ from gaming_ai.speech.audio_player import InterruptibleAudioPlayer
 from gaming_ai.speech.microphone import MicrophoneStream
 from gaming_ai.speech.stt import SpeechToText
 from gaming_ai.speech.tts import TextToSpeechEngine
+from gaming_ai.agent.decision import DecisionEngine
+from gaming_ai.vision.event_detector import EventDetector, GameEvent
+from gaming_ai.vision.frame_analyzer import FrameAnalyzer
 from gaming_ai.vision.screen_capture import ScreenCapture
 from gaming_ai.vision.vision_model import BaseVisionModel, OllamaVisionModel, VisionAnalysisResult
 from gaming_ai.vision.webcam import WebcamCapture
@@ -25,7 +28,7 @@ logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception (audio + screen + webcam), reasoning, speech, and interruption handling."""
+    """Orchestrates perception (audio + screen + webcam), reasoning, decision-making, and speech."""
 
     def __init__(
         self,
@@ -37,6 +40,9 @@ class GamingCompanionAgent:
         screen_capture: Optional[ScreenCapture] = None,
         webcam: Optional[WebcamCapture] = None,
         player_analyzer: Optional[PlayerAnalyzer] = None,
+        event_detector: Optional[EventDetector] = None,
+        frame_analyzer: Optional[FrameAnalyzer] = None,
+        decision_engine: Optional[DecisionEngine] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -72,10 +78,17 @@ class GamingCompanionAgent:
 
         # Vision Subsystem
         self.screen_capture = screen_capture or ScreenCapture()
+        self.frame_analyzer = frame_analyzer or FrameAnalyzer()
         self.vision_model = vision_model or OllamaVisionModel(
             model_name=self.config.vision.model if self.config.vision.model != "qwen2-vl:2b" else "llava:latest",
             host=self.config.ai.host,
             timeout=45.0,
+        )
+
+        # Event Detection & Decision Engine (Phases 4 & 5)
+        self.event_detector = event_detector or EventDetector()
+        self.decision_engine = decision_engine or DecisionEngine(
+            personality_config=self.config.personality
         )
 
         # Webcam Subsystem (Optional / In-Memory only)
@@ -86,6 +99,8 @@ class GamingCompanionAgent:
         """Callback invoked immediately when user begins speaking into the microphone."""
         if self.config.tts.interrupt_on_speech:
             self.tts.interrupt()
+        # Direct user speech resets autonomous cooldown
+        self.decision_engine.reset_cooldown()
 
     async def observe_player(self) -> Optional[PlayerReaction]:
         """Capture webcam and analyze player reaction in-memory."""
@@ -96,6 +111,32 @@ class GamingCompanionAgent:
         self.context.update_webcam_context(reaction.summary)
         logger.info("Player Reaction: %s (Emotion: %s, Engagement: %s)", reaction.summary, reaction.emotion, reaction.engagement)
         return reaction
+
+    async def process_gameplay_frame(self, force_analysis: bool = False) -> Optional[GameEvent]:
+        """
+        Process current game screen, detect events, and decide whether to speak.
+        """
+        frame_rgb = await asyncio.to_thread(self.screen_capture.capture_frame_numpy)
+        has_changed, delta = await asyncio.to_thread(self.frame_analyzer.has_significant_change, frame_rgb)
+
+        if not has_changed and not force_analysis:
+            return None
+
+        # Run structured VLM analysis
+        vision_result = await self.observe_screen(structured=True)
+        event = self.event_detector.detect_event(vision_result, frame_delta=delta)
+
+        # Evaluate attention and commentary decision
+        if self.decision_engine.should_comment(event, force=force_analysis):
+            prompt = (
+                f"React naturally and spontaneously to this in-game event: [{event.event_type.value.upper()}]. "
+                f"Situation: {event.description}."
+            )
+            # Generate autonomous comment
+            await self.respond_to_text(prompt, speak=True, include_screen=False)
+            self.decision_engine.record_speech()
+
+        return event
 
     def start_microphone(self) -> None:
         """Start listening to microphone input."""

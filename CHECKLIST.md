@@ -7,8 +7,8 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 ## 📊 Summary Status
 
 * **Total Phases**: 12 (Phases 0 through 11)
-* **Completed Phases**: 4 / 12 (Phase 0, Phase 1, Phase 2, Phase 3)
-* **In Progress / Next Up**: Phase 4 (Event Detection & Scoring)
+* **Completed Phases**: 5 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4)
+* **In Progress / Next Up**: Phase 5 (Autonomous Commentary Loop)
 * **Target Hardware**: NVIDIA GeForce RTX 3070 (8 GB VRAM) — Windows 10/11
 
 ---
@@ -53,15 +53,16 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 
 ---
 
-### ⏳ Phase 4 — Event Detection & Interestingness (NEXT UP)
-- [ ] Fast frame differencing to avoid sending redundant frames to VLM.
-- [ ] Structured game event classification (boss fights, low HP, deaths, victories, rare loot).
-- [ ] Event interestingness scoring (0.0 to 1.0 thresholding).
-- [ ] Dynamic event queue for the agent brain.
+### ✅ Phase 4 — Event Detection & Interestingness (COMPLETED)
+- [x] Structured game event classification (`EventDetector` for deaths, boss fights, low HP, victories).
+- [x] Section 12 attention scoring engine (0.0 to 1.0 thresholding).
+- [x] Dynamic threshold adjustment based on `personality.talkativeness`.
+- [x] Speech cooldown enforcement (`DecisionEngine` with user speech interruption override).
+- [x] Automated unit & integration tests (23 passing tests total).
 
 ---
 
-### ⏳ Phase 5 — Autonomous Commentary (REMAINING)
+### ⏳ Phase 5 — Autonomous Commentary (NEXT UP)
 - [ ] Background observation loop without infinite blocking.
 - [ ] Attention thresholding (ignore 0.0–0.6, consider 0.6–0.8, talk on 0.8–1.0).
 - [ ] Speech cooldown timer (minimum interval between autonomous comments).
