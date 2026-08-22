@@ -6,9 +6,14 @@ import base64
 import io
 import logging
 from typing import Optional, Tuple
-import cv2
 import numpy as np
 from PIL import Image
+
+try:
+    import cv2
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
 
 logger = logging.getLogger("gaming_ai.vision.webcam")
 
@@ -27,13 +32,15 @@ class WebcamCapture:
         self.target_resolution = target_resolution
         self.jpeg_quality = jpeg_quality
         self.mock_frame = mock_frame
-        self._cap: Optional[cv2.VideoCapture] = None
+        self._cap = None
         self._is_active: bool = False
 
     def is_available(self) -> bool:
         """Check if webcam device is connected and accessible."""
         if self.mock_frame is not None:
             return True
+        if not HAS_CV2:
+            return False
         try:
             temp_cap = cv2.VideoCapture(self.device_index, cv2.CAP_DSHOW)
             if not temp_cap.isOpened():

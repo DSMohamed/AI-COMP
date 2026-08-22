@@ -13,6 +13,7 @@ from gaming_ai.agent.agent import GamingCompanionAgent
 from gaming_ai.agent.observer import ContinuousObserver
 from gaming_ai.app.config import AppConfig, get_config
 from gaming_ai.app.logging import log_event, setup_logging
+from gaming_ai.ui.state import DashboardState
 from gaming_ai.vision.event_detector import GameEvent
 
 console = Console()
