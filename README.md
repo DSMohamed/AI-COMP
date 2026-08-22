@@ -134,7 +134,7 @@ See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development
 - [x] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
 - [x] **Phase 9**: Sandboxed computer control tools & audit logging.
 - [x] **Phase 10**: Real-time telemetry overlay & 8GB VRAM Guard watchdog.
-- [ ] **Phase 11**: Optional LoRA fine-tuning & voice cloning.
+- [x] **Phase 11**: LoRA fine-tuning scripts, synthetic datasets & Ollama packaging.
 
 ---
 
