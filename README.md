@@ -129,7 +129,7 @@ See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development
 - [x] **Phase 3**: Webcam reaction & player engagement monitoring.
 - [x] **Phase 4**: Event detection & interestingness scoring.
 - [x] **Phase 5**: Autonomous gameplay commentary & continuous observation loop.
-- [ ] **Phase 6**: Game-specific RAG knowledge base (ChromaDB).
+- [x] **Phase 6**: Game-specific RAG knowledge base (ChromaDB + semantic markdown chunking).
 - [ ] **Phase 7**: SQLite persistent multi-session memory.
 - [ ] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
 - [ ] **Phase 9**: Sandboxed computer control tools.

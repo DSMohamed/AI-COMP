@@ -14,6 +14,7 @@ Welcome to the technical documentation for the **Local AI Gaming Companion**, a 
 | [📷 Webcam & Reaction Pipeline](webcam_pipeline.md) | Privacy-safe player face, reaction, and engagement observation with zero disk storage. |
 | [🎯 Event Detection & Attention](event_detection.md) | Game event classification, interestingness scoring, attention thresholds, and speech cooldowns. |
 | [🎮 Autonomous Commentary Loop](autonomous_commentary.md) | Multimodal async observation loop, priority preemption, and live gaming dashboard. |
+| [📚 Game-Specific RAG Knowledge](rag_knowledge.md) | ChromaDB vector storage, semantic markdown chunking, and grounded strategy retrieval. |
 | [🧠 Models & Providers](models_and_providers.md) | Ollama LLM provider abstraction, model configuration (`llama3.2:3b`, `qwen2.5:7b`), and custom provider guide. |
 | [🎭 Personality & Agent](personality_and_agent.md) | Gaming companion persona, tone sliders (sarcasm, humor, energy, slang), and context aggregation. |
 | [⚙️ Configuration Guide](configuration.md) | Detailed schema reference for `config.yaml` and runtime customization. |

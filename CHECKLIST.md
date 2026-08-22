@@ -7,8 +7,8 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 ## 📊 Summary Status
 
 * **Total Phases**: 12 (Phases 0 through 11)
-* **Completed Phases**: 6 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5)
-* **In Progress / Next Up**: Phase 6 (Game-Specific RAG Knowledge Base)
+* **Completed Phases**: 7 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6)
+* **In Progress / Next Up**: Phase 7 (Multi-Layer Memory System)
 * **Target Hardware**: NVIDIA GeForce RTX 3070 (8 GB VRAM) — Windows 10/11
 
 ---
@@ -71,16 +71,17 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 
 ---
 
-### ⏳ Phase 6 — Game-Specific RAG Knowledge Base (NEXT UP)
-- [ ] Document ingestion pipeline (TXT, Markdown, Wiki guides).
-- [ ] Semantic chunking preserving boss/item/mechanics metadata.
-- [ ] Vector database integration (ChromaDB / LanceDB).
-- [ ] Embeddings generation with `nomic-embed-text`.
-- [ ] Game-filtered semantic retrieval into LLM prompt context with source citation.
+### ✅ Phase 6 — Game-Specific RAG Knowledge Base (COMPLETED)
+- [x] Semantic markdown document chunker preserving headers, categories, and tables (`MarkdownChunker`).
+- [x] Local embedding generation (`OllamaEmbeddingModel` with `nomic-embed-text`).
+- [x] ChromaDB persistent vector storage with in-memory cosine fallback (`LocalVectorStore`).
+- [x] Grounded knowledge retriever with source citations (`RAGRetriever`).
+- [x] Ingestion pipeline for `knowledge/<game>/` directory (`KnowledgeIngestor`).
+- [x] Automated unit & integration tests (27 passing tests total).
 
 ---
 
-### ⏳ Phase 7 — Multi-Layer Memory System (REMAINING)
+### ⏳ Phase 7 — Multi-Layer Memory System (NEXT UP)
 - [ ] SQLite memory database schema (`sessions`, `memories`, `conversations`, `events`).
 - [ ] Short-Term Memory (live session rolling history).
 - [ ] Long-Term Memory (persistent user preferences, playstyle facts, build types).

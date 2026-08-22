@@ -23,6 +23,7 @@ class ContextEngine:
         self.current_game: Optional[str] = None
         self.latest_vision_context: Optional[str] = None
         self.latest_webcam_context: Optional[str] = None
+        self.latest_rag_context: Optional[str] = None
 
     def add_user_message(self, text: str) -> None:
         """Add a player utterance to history."""
@@ -40,6 +41,10 @@ class ContextEngine:
         """Update the latest perceived player webcam reaction."""
         self.latest_webcam_context = reaction_summary
 
+    def update_rag_context(self, rag_text: Optional[str]) -> None:
+        """Update the latest retrieved game knowledge context."""
+        self.latest_rag_context = rag_text
+
     def clear_history(self) -> None:
         """Reset short-term conversation history."""
         self._history.clear()
@@ -55,6 +60,9 @@ class ContextEngine:
 
         if self.latest_webcam_context:
             system_prompt += f"\n\nPLAYER WEBCAM REACTION:\n{self.latest_webcam_context}"
+
+        if self.latest_rag_context:
+            system_prompt += f"\n\n{self.latest_rag_context}"
 
         messages: List[Message] = [Message(role="system", content=system_prompt)]
 

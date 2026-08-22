@@ -17,6 +17,7 @@ from gaming_ai.speech.microphone import MicrophoneStream
 from gaming_ai.speech.stt import SpeechToText
 from gaming_ai.speech.tts import TextToSpeechEngine
 from gaming_ai.agent.decision import DecisionEngine
+from gaming_ai.rag.retriever import RAGRetriever
 from gaming_ai.vision.event_detector import EventDetector, GameEvent
 from gaming_ai.vision.frame_analyzer import FrameAnalyzer
 from gaming_ai.vision.screen_capture import ScreenCapture
@@ -28,7 +29,7 @@ logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception (audio + screen + webcam), reasoning, decision-making, and speech."""
+    """Orchestrates perception (audio + screen + webcam), knowledge retrieval (RAG), reasoning, and speech."""
 
     def __init__(
         self,
@@ -43,6 +44,7 @@ class GamingCompanionAgent:
         event_detector: Optional[EventDetector] = None,
         frame_analyzer: Optional[FrameAnalyzer] = None,
         decision_engine: Optional[DecisionEngine] = None,
+        retriever: Optional[RAGRetriever] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -57,6 +59,9 @@ class GamingCompanionAgent:
             host=self.config.ai.host,
             timeout=self.config.ai.request_timeout,
         )
+
+        # Knowledge Base / RAG Retriever
+        self.retriever = retriever
 
         # Audio Player & TTS
         self.player = InterruptibleAudioPlayer()
@@ -213,6 +218,16 @@ class GamingCompanionAgent:
                 await self.observe_screen()
             except Exception as e:
                 logger.warning("Screen observation failed: %s", e)
+
+        # Retrieve relevant RAG knowledge if available
+        if self.retriever:
+            try:
+                rag_context = await self.retriever.retrieve_formatted_context(
+                    query=user_text, game=self.context.current_game
+                )
+                self.context.update_rag_context(rag_context)
+            except Exception as e:
+                logger.warning("RAG retrieval failed: %s", e)
 
         messages = self.context.build_context(current_user_input=user_text)
 
