@@ -131,7 +131,7 @@ See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development
 - [x] **Phase 5**: Autonomous gameplay commentary & continuous observation loop.
 - [x] **Phase 6**: Game-specific RAG knowledge base (ChromaDB + semantic markdown chunking).
 - [x] **Phase 7**: SQLite persistent multi-session memory (Working, Session, Episodic, Semantic).
-- [ ] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
+- [x] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
 - [ ] **Phase 9**: Sandboxed computer control tools.
 - [ ] **Phase 10**: Real-time telemetry overlay & VRAM optimization.
 - [ ] **Phase 11**: Optional LoRA fine-tuning & voice cloning.

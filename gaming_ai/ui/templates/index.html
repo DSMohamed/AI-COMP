@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Local AI Gaming Companion — Live Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0a0d14;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card-hover: rgba(26, 35, 56, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.3);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at 15% 15%, #131b2e 0%, var(--bg-base) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(10, 13, 20, 0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-glass);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            font-size: 1.75rem;
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 9999px;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Sensor Bar */
+        .sensor-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .sensor-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.85rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-green { background: var(--accent-emerald); box-shadow: 0 0 8px var(--accent-emerald); }
+        .dot-red { background: var(--accent-rose); box-shadow: 0 0 8px var(--accent-rose); }
+        .dot-cyan { background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
+        .dot-amber { background: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); }
+
+        /* Main Grid */
+        main {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Transcript Panel */
+        .transcript-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-header {
+            padding: 1rem 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .transcript-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .transcript-bubble {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            max-width: 85%;
+            animation: fadeIn 0.25s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bubble-player {
+            align-self: flex-end;
+        }
+
+        .bubble-companion {
+            align-self: flex-start;
+        }
+
+        .bubble-event {
+            align-self: center;
+            max-width: 95%;
+        }
+
+        .bubble-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bubble-content {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+
+        .bubble-player .bubble-content {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.15) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bubble-companion .bubble-content {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.25) 0%, rgba(147, 51, 234, 0.15) 100%);
+            border: 1px solid rgba(236, 72, 153, 0.35);
+            color: #fff;
+            border-bottom-left-radius: 2px;
+        }
+
+        .bubble-event .bubble-content {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+            text-align: center;
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Sidebar Controls */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 1.25rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Personality Sliders */
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .slider-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--primary-glow);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Quick Action Buttons */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-glass);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.15);
+            border-color: rgba(244, 63, 94, 0.3);
+            color: var(--accent-rose);
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 63, 94, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <span class="brand-icon">🎮</span>
+            <div>
+                <span class="brand-title">Gaming Companion</span>
+                <span class="brand-badge">RTX 3070 100% Local</span>
+            </div>
+        </div>
+
+        <div class="sensor-bar">
+            <div class="sensor-pill" id="badge-mic"><span class="status-dot dot-green"></span> MIC: LISTENING</div>
+            <div class="sensor-pill" id="badge-camera"><span class="status-dot dot-green"></span> CAMERA: ON</div>
+            <div class="sensor-pill" id="badge-screen"><span class="status-dot dot-cyan"></span> SCREEN: ACTIVE</div>
+            <div class="sensor-pill" id="badge-ai"><span class="status-dot dot-green"></span> AI: IDLE</div>
+            <div class="sensor-pill" id="badge-voice"><span class="status-dot dot-cyan"></span> VOICE: SILENT</div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Transcript Feed -->
+        <section class="transcript-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span>💬 Live Multimodal Conversation</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);" id="active-game-label">
+                    Active Game: <strong>Elden Ring</strong>
+                </div>
+            </div>
+
+            <div class="transcript-feed" id="transcript-container">
+                <div class="bubble-companion transcript-bubble">
+                    <div class="bubble-meta"><span>🤖 Glitch</span> <span>Just now</span></div>
+                    <div class="bubble-content">Ready to roll! Let's conquer this boss. I'm watching your screen and listening.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sidebar Telemetry & Personality -->
+        <aside class="sidebar">
+            <!-- Telemetry Card -->
+            <div class="card">
+                <div class="card-header">📊 Telemetry & VRAM</div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-deaths" style="color: var(--accent-rose);">0</div>
+                        <div class="stat-label">DEATHS</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-victories" style="color: var(--accent-emerald);">0</div>
+                        <div class="stat-label">VICTORIES</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-events" style="color: var(--accent-amber);">0</div>
+                        <div class="stat-label">EVENTS DETECTED</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-vram" style="color: var(--accent-cyan);">4.2G</div>
+                        <div class="stat-label">VRAM (RTX 3070)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personality Tuning -->
+            <div class="card">
+                <div class="card-header">🎭 Personality Sliders</div>
+                <div class="slider-group">
+                    <div class="slider-item">
+                        <div class="slider-labels"><span>Sarcasm</span><span id="val-sarcasm">70%</span></div>
+                        <input type="range" id="slide-sarcasm" min="0" max="100" value="70">
+                    </div>
+                    <div class="slider-item">
+                        <div class="slider-labels"><span>Humor</span><span id="val-humor">80%</span></div>
+                        <input type="range" id="slide-humor" min="0" max="100" value="80">
+                    </div>
+                    <div class="slider-item">
+                        <div class="slider-labels"><span>Energy</span><span id="val-energy">75%</span></div>
+                        <input type="range" id="slide-energy" min="0" max="100" value="75">
+                    </div>
+                    <div class="slider-item">
+                        <div class="slider-labels"><span>Talkativeness</span><span id="val-talk">65%</span></div>
+                        <input type="range" id="slide-talk" min="0" max="100" value="65">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Controls -->
+            <div class="card">
+                <div class="card-header">🔒 Privacy & Memory</div>
+                <div class="btn-grid">
+                    <button class="btn" id="btn-toggle-cam" onclick="toggleSensor('camera')">📷 Toggle Camera</button>
+                    <button class="btn" id="btn-toggle-mic" onclick="toggleSensor('mic')">🎤 Mute / Unmute</button>
+                    <button class="btn btn-danger" onclick="clearMemory()">🧹 Clear Session Memory</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // WebSocket live state syncing
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            updateUI(data);
+        };
+
+        ws.onclose = function() {
+            console.log("WebSocket connection closed. Retrying in 2s...");
+            setTimeout(() => {
+                ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+            }, 2000);
+        };
+
+        function updateUI(state) {
+            if (!state) return;
+
+            // Sensors
+            if (state.sensors) {
+                document.getElementById('badge-mic').innerHTML = `<span class="status-dot ${state.sensors.mic === 'LISTENING' ? 'dot-green' : 'dot-red'}"></span> MIC: ${state.sensors.mic}`;
+                document.getElementById('badge-camera').innerHTML = `<span class="status-dot ${state.sensors.camera === 'ON' ? 'dot-green' : 'dot-red'}"></span> CAMERA: ${state.sensors.camera}`;
+                document.getElementById('badge-screen').innerHTML = `<span class="status-dot ${state.sensors.screen === 'ACTIVE' ? 'dot-cyan' : 'dot-amber'}"></span> SCREEN: ${state.sensors.screen}`;
+                document.getElementById('badge-ai').innerHTML = `<span class="status-dot ${state.sensors.ai === 'THINKING' ? 'dot-amber' : 'dot-green'}"></span> AI: ${state.sensors.ai}`;
+                document.getElementById('badge-voice').innerHTML = `<span class="status-dot ${state.sensors.voice === 'SPEAKING' ? 'dot-cyan' : 'dot-green'}"></span> VOICE: ${state.sensors.voice}`;
+            }
+
+            // Telemetry
+            if (state.telemetry) {
+                document.getElementById('stat-deaths').innerText = state.telemetry.death_count || 0;
+                document.getElementById('stat-victories').innerText = state.telemetry.victory_count || 0;
+                document.getElementById('stat-events').innerText = state.telemetry.events_detected || 0;
+                document.getElementById('stat-vram').innerText = (state.telemetry.vram_used_mb / 1024).toFixed(1) + 'G';
+            }
+
+            // Personality
+            if (state.personality) {
+                document.getElementById('slide-sarcasm').value = state.personality.sarcasm;
+                document.getElementById('val-sarcasm').innerText = state.personality.sarcasm + '%';
+                document.getElementById('slide-humor').value = state.personality.humor;
+                document.getElementById('val-humor').innerText = state.personality.humor + '%';
+                document.getElementById('slide-energy').value = state.personality.energy;
+                document.getElementById('val-energy').innerText = state.personality.energy + '%';
+                document.getElementById('slide-talk').value = state.personality.talkativeness;
+                document.getElementById('val-talk').innerText = state.personality.talkativeness + '%';
+            }
+
+            // Transcript
+            if (state.transcript && state.transcript.length > 0) {
+                const container = document.getElementById('transcript-container');
+                container.innerHTML = '';
+                state.transcript.forEach(item => {
+                    const bubble = document.createElement('div');
+                    bubble.className = `transcript-bubble bubble-${item.sender}`;
+                    
+                    const meta = document.createElement('div');
+                    meta.className = 'bubble-meta';
+                    const name = item.sender === 'player' ? '🎤 Player' : (item.sender === 'companion' ? '🤖 Glitch' : '⚔️ Event');
+                    meta.innerHTML = `<span>${name}</span>${item.latency_ms ? ` <span>(${item.latency_ms.toFixed(0)}ms)</span>` : ''}`;
+                    
+                    const content = document.createElement('div');
+                    content.className = 'bubble-content';
+                    content.innerText = item.text;
+
+                    bubble.appendChild(meta);
+                    bubble.appendChild(content);
+                    container.appendChild(bubble);
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Live slider updates
+        ['sarcasm', 'humor', 'energy', 'talk'].forEach(key => {
+            const slider = document.getElementById(`slide-${key}`);
+            const valLabel = document.getElementById(`val-${key}`);
+            slider.oninput = function() {
+                valLabel.innerText = this.value + '%';
+                fetch('/api/personality', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({[key === 'talk' ? 'talkativeness' : key]: parseInt(this.value)})
+                });
+            };
+        });
+
+        function toggleSensor(sensor) {
+            fetch(`/api/toggle/${sensor}`, { method: 'POST' });
+        }
+
+        function clearMemory() {
+            if (confirm("Are you sure you want to clear session memory?")) {
+                fetch('/api/clear_memory', { method: 'POST' });
+            }
+        }
+    </script>
+</body>
+</html>

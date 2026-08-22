@@ -57,20 +57,45 @@ async def run_voice_mode(agent: GamingCompanionAgent) -> None:
     await agent.run_voice_loop(on_transcription=on_stt, on_response=on_reply)
 
 
-async def run_companion_mode(agent: GamingCompanionAgent) -> None:
+async def run_companion_mode(agent: GamingCompanionAgent, launch_web: bool = False, port: int = 8080) -> None:
     """Full multimodal continuous observation mode (Voice + Screen + Webcam + Autonomous Commentary)."""
     console.print("[bold green]● MULTIMODAL COMPANION ACTIVE[/bold green]")
     console.print("[cyan]👁️ Screen Watcher:[/cyan] Active | [cyan]🎤 Microphone:[/cyan] Active | [cyan]🧠 Brain:[/cyan] Ready")
+    
+    dashboard_state = DashboardState()
+    dashboard_state.current_game = agent.context.current_game or "Elden Ring"
+    
+    if launch_web:
+        import uvicorn
+        from gaming_ai.ui.web_server import create_dashboard_app
+        app = create_dashboard_app(state=dashboard_state, agent=agent)
+        server_config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
+        server = uvicorn.Server(server_config)
+        asyncio.create_task(server.serve())
+        console.print(f"[bold cyan]🌐 Live Web Dashboard running at:[/bold cyan] [link=http://127.0.0.1:{port}]http://127.0.0.1:{port}[/link]\n")
+
     console.print("[dim]Play your game! The companion will watch, listen, and comment when interesting events occur. Press Ctrl+C to exit.[/dim]\n")
 
     def on_stt(text: str, latency: float) -> None:
         console.print(f"\n[bold green]🎤 You:[/bold green] {text} [dim]({latency:.0f}ms)[/dim]")
+        dashboard_state.add_transcript(sender="player", text=text, latency_ms=latency)
 
     def on_reply(text: str) -> None:
         console.print(f"[bold magenta]🔊 {agent.config.personality.name}:[/bold magenta] {text}\n")
+        dashboard_state.add_transcript(sender="companion", text=text)
 
     def on_game_event(event: GameEvent) -> None:
         console.print(f"[bold yellow]⚔️ [EVENT: {event.event_type.value.upper()} (Score: {event.interestingness:.2f})][/bold yellow] [dim]{event.description}[/dim]")
+        dashboard_state.add_transcript(
+            sender="event",
+            text=f"[{event.event_type.value.upper()}] {event.description}",
+            event_type=event.event_type.value,
+            score=event.interestingness,
+        )
+        dashboard_state.update_telemetry(
+            deaths=agent.memory.current_session.death_count if agent.memory and agent.memory.current_session else 0,
+            victories=agent.memory.current_session.victory_count if agent.memory and agent.memory.current_session else 0,
+        )
 
     observer = ContinuousObserver(
         agent=agent,
@@ -90,9 +115,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Local AI Gaming Companion")
     parser.add_argument(
         "--mode",
-        choices=["companion", "voice", "text"],
+        choices=["companion", "gui", "voice", "text"],
         default="companion",
-        help="Interaction mode: 'companion' (full multimodal), 'voice' (microphone only), or 'text' (console)",
+        help="Interaction mode: 'companion' (multimodal CLI), 'gui' (live web dashboard), 'voice' (microphone), or 'text' (console)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port for the web dashboard (default: 8080)",
     )
     parser.add_argument(
         "--config",
@@ -109,8 +140,8 @@ def main() -> None:
     agent = GamingCompanionAgent(config=config)
 
     try:
-        if args.mode == "companion":
-            asyncio.run(run_companion_mode(agent))
+        if args.mode in ("companion", "gui"):
+            asyncio.run(run_companion_mode(agent, launch_web=(args.mode == "gui" or args.mode == "companion"), port=args.port))
         elif args.mode == "voice":
             asyncio.run(run_voice_mode(agent))
         else:
