@@ -10,8 +10,8 @@ Thank you for your interest in contributing to the **Local AI Gaming Companion**
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/local-ai-gaming-companion.git
-   cd local-ai-gaming-companion
+   git clone https://github.com/DSMohamed/AI-COMP.git
+   cd AI-COMP
    ```
 
 2. **Set up Virtual Environment**:

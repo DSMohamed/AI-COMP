@@ -56,8 +56,8 @@ Microphone  ──► [ VAD Engine ] ──► [ faster-whisper STT ]
 ### 2. Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/local-ai-gaming-companion.git
-cd local-ai-gaming-companion
+git clone https://github.com/DSMohamed/AI-COMP.git
+cd AI-COMP
 
 # Create virtual environment
 uv venv --python 3.12
