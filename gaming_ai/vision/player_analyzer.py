@@ -5,8 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 from typing import Optional
-import cv2
 import numpy as np
+
+try:
+    import cv2
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
 
 logger = logging.getLogger("gaming_ai.vision.player_analyzer")
 
@@ -30,6 +35,8 @@ class PlayerAnalyzer:
 
     def _load_cascades(self) -> None:
         """Lazy-load OpenCV Haar cascades if available in OpenCV version."""
+        if not HAS_CV2:
+            return
         if self._face_cascade is None and hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data"):
             try:
                 face_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -56,7 +63,7 @@ class PlayerAnalyzer:
         self._load_cascades()
 
         # If Haar cascades are available
-        if self._face_cascade is not None and hasattr(self._face_cascade, "detectMultiScale"):
+        if HAS_CV2 and self._face_cascade is not None and hasattr(self._face_cascade, "detectMultiScale"):
             try:
                 gray = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
                 faces = self._face_cascade.detectMultiScale(
