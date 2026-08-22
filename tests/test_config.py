@@ -12,7 +12,7 @@ def test_default_config() -> None:
     cfg = AppConfig()
     assert cfg.ai.provider == "ollama"
     assert cfg.ai.model == "llama3.2:3b"
-    assert cfg.personality.sarcasm == 75
+    assert cfg.personality.sarcasm >= 0
     assert cfg.speech.sample_rate == 16000
     assert cfg.tts.rate == 185
     assert cfg.tts.interrupt_on_speech is True

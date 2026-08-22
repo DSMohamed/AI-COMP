@@ -440,9 +440,18 @@
                 </div>
             </div>
 
-            <!-- Personality Tuning -->
+            <!-- Persona & Tone Tuning -->
             <div class="card">
-                <div class="card-header">🎭 Personality Sliders</div>
+                <div class="card-header">🤖 Persona & Mode</div>
+                <div style="margin-bottom: 1rem;">
+                    <select id="persona-select" onchange="updatePersona(this.value)" style="width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glass); color: #fff; padding: 0.6rem; border-radius: 8px; font-family: inherit; font-size: 0.85rem; outline: none; cursor: pointer;">
+                        <option value="daily_assistant">🤖 Daily Assistant & Personal Companion</option>
+                        <option value="gaming">🎮 Gaming Buddy & Coach (Glitch)</option>
+                        <option value="coding">💻 Coding Partner & Tech Assistant</option>
+                        <option value="chill">☕ Chill Friend & Casual Chat</option>
+                    </select>
+                </div>
+                <div class="card-header" style="margin-top: 0.5rem;">🎭 Tone Sliders</div>
                 <div class="slider-group">
                     <div class="slider-item">
                         <div class="slider-labels"><span>Sarcasm</span><span id="val-sarcasm">70%</span></div>
@@ -562,6 +571,14 @@
                 });
             };
         });
+
+        function updatePersona(persona) {
+            fetch('/api/personality', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({persona: persona})
+            });
+        }
 
         function toggleSensor(sensor) {
             fetch(`/api/toggle/${sensor}`, { method: 'POST' });

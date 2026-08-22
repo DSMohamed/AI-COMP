@@ -42,14 +42,15 @@ class TTSConfig(BaseModel):
 
 
 class PersonalityConfig(BaseModel):
-    """Configuration for gaming companion personality."""
-    name: str = Field(default="Glitch", description="Companion name")
-    sarcasm: int = Field(default=75, ge=0, le=100)
-    humor: int = Field(default=80, ge=0, le=100)
-    energy: int = Field(default=75, ge=0, le=100)
+    """Configuration for AI companion personality and daily assistant modes."""
+    name: str = Field(default="Nova", description="Companion name")
+    persona: str = Field(default="daily_assistant", description="Persona mode: 'daily_assistant', 'gaming', 'coding', or 'chill'")
+    sarcasm: int = Field(default=40, ge=0, le=100)
+    humor: int = Field(default=75, ge=0, le=100)
+    energy: int = Field(default=70, ge=0, le=100)
     talkativeness: int = Field(default=50, ge=0, le=100)
-    supportiveness: int = Field(default=65, ge=0, le=100)
-    game_slang: bool = Field(default=True)
+    supportiveness: int = Field(default=85, ge=0, le=100)
+    game_slang: bool = Field(default=False)
     custom_system_prompt: str = Field(default="")
 
 

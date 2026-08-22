@@ -18,6 +18,7 @@ logger = logging.getLogger("gaming_ai.ui.web_server")
 
 
 class PersonalityUpdateRequest(BaseModel):
+    persona: Optional[str] = None
     sarcasm: Optional[int] = None
     humor: Optional[int] = None
     energy: Optional[int] = None

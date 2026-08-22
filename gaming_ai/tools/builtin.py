@@ -1,11 +1,13 @@
-"""Built-in safe tools for gaming assistance, screenshots, timers, and browser guides."""
+"""Built-in safe tools for daily assistance, gaming, apps, notes, timers, and browser searches."""
 
 from __future__ import annotations
 
 import asyncio
 from datetime import datetime
 import logging
+import os
 from pathlib import Path
+import subprocess
 import time
 from typing import Any, Callable, Dict, Optional
 import webbrowser
@@ -17,10 +19,10 @@ logger = logging.getLogger("gaming_ai.tools.builtin")
 
 
 class ScreenshotTool(BaseTool):
-    """Takes a game screenshot and saves it to the local output directory."""
+    """Takes a screenshot of the active display and saves it to disk."""
 
     name = "take_screenshot"
-    description = "Capture a high-resolution screenshot of the active gaming display and save it locally."
+    description = "Capture a high-resolution screenshot of the active display and save it locally."
     requires_confirmation = False
     is_privileged = False
 
@@ -49,10 +51,10 @@ class ScreenshotTool(BaseTool):
 
 
 class TimerTool(BaseTool):
-    """Sets a non-blocking background countdown timer with an alert."""
+    """Sets a non-blocking background countdown timer or reminder."""
 
     name = "set_timer"
-    description = "Set a background gameplay countdown timer (e.g. boss respawn, item buff expiry, or cooldown)."
+    description = "Set a background timer or reminder (e.g. coffee break, focus timer, or gaming respawn)."
     requires_confirmation = False
     is_privileged = False
 
@@ -61,7 +63,7 @@ class TimerTool(BaseTool):
 
     async def execute(self, seconds: int = 60, label: str = "Timer", **kwargs: Any) -> ToolResult:
         """Spawn an asynchronous countdown task."""
-        seconds = max(1, min(3600, int(seconds)))  # Clamp between 1s and 1 hour
+        seconds = max(1, min(86400, int(seconds)))
 
         async def _timer_worker(dur: int, lbl: str) -> None:
             await asyncio.sleep(dur)
@@ -78,23 +80,19 @@ class TimerTool(BaseTool):
 
 
 class BrowserGuideTool(BaseTool):
-    """Safely opens a validated guide or wiki page in the default web browser."""
+    """Safely opens a validated URL or web search in the default web browser."""
 
     name = "open_guide"
-    description = "Open a game wiki or strategy guide URL safely in the default web browser."
+    description = "Open a URL or search query safely in the default web browser."
     requires_confirmation = False
     is_privileged = False
 
     async def execute(self, url: str, **kwargs: Any) -> ToolResult:
         """Validate URL scheme and open in browser."""
         if not (url.startswith("https://") or url.startswith("http://")):
-            return ToolResult(
-                success=False,
-                output="",
-                error="Invalid URL scheme. Only HTTP and HTTPS URLs are permitted.",
-            )
+            # If plain text query, search with DuckDuckGo
+            url = f"https://duckduckgo.com/?q={url.replace(' ', '+')}"
 
-        # Disallow malicious schemes or localhost probes
         if "127.0.0.1" in url or "localhost" in url or "file://" in url:
             return ToolResult(
                 success=False,
@@ -103,19 +101,115 @@ class BrowserGuideTool(BaseTool):
             )
 
         await asyncio.to_thread(webbrowser.open, url)
-        logger.info("Opened browser guide: %s", url)
+        logger.info("Opened URL in browser: %s", url)
         return ToolResult(
             success=True,
-            output=f"Opened guide in browser: {url}",
+            output=f"Opened in browser: {url}",
             metadata={"url": url},
         )
 
 
+class AppLauncherTool(BaseTool):
+    """Safely launches common desktop applications."""
+
+    name = "launch_app"
+    description = "Launch an approved desktop application (e.g. notepad, calculator, vscode, spotify, browser)."
+    requires_confirmation = False
+    is_privileged = False
+
+    ALLOWED_APPS = {
+        "notepad": "notepad.exe",
+        "calculator": "calc.exe",
+        "calc": "calc.exe",
+        "code": "code",
+        "vscode": "code",
+        "browser": "msedge.exe",
+        "edge": "msedge.exe",
+        "chrome": "chrome.exe",
+        "spotify": "spotify.exe",
+        "terminal": "wt.exe",
+        "cmd": "cmd.exe",
+    }
+
+    async def execute(self, app_name: str, **kwargs: Any) -> ToolResult:
+        """Launch the specified desktop app."""
+        key = app_name.lower().strip()
+        cmd = self.ALLOWED_APPS.get(key)
+        if not cmd:
+            return ToolResult(
+                success=False,
+                output="",
+                error=f"App '{app_name}' is not in the approved whitelist: {list(self.ALLOWED_APPS.keys())}",
+            )
+
+        try:
+            subprocess.Popen(cmd, shell=True)
+            return ToolResult(
+                success=True,
+                output=f"Launched {app_name} successfully.",
+                metadata={"app": key, "cmd": cmd},
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                output="",
+                error=f"Failed to launch {app_name}: {e}",
+            )
+
+
+class NoteTakingTool(BaseTool):
+    """Takes quick notes and adds items to the daily todo/notes file."""
+
+    name = "take_note"
+    description = "Save a quick personal note or todo item to the daily notes file."
+    requires_confirmation = False
+    is_privileged = False
+
+    def __init__(self, notes_file: str | Path = "data/daily_notes.txt") -> None:
+        self.notes_file = Path(notes_file)
+
+    async def execute(self, note: str, **kwargs: Any) -> ToolResult:
+        """Append note with timestamp."""
+        self.notes_file.parent.mkdir(parents=True, exist_ok=True)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        line = f"[{now_str}] {note.strip()}\n"
+
+        def _append():
+            with open(self.notes_file, "a", encoding="utf-8") as f:
+                f.write(line)
+
+        await asyncio.to_thread(_append)
+        return ToolResult(
+            success=True,
+            output=f"Note saved: '{note.strip()}'",
+            metadata={"note": note},
+        )
+
+
+class TimeDateTool(BaseTool):
+    """Reports the current local time, date, and day of the week."""
+
+    name = "get_time"
+    description = "Get the current local time and date."
+    requires_confirmation = False
+    is_privileged = False
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        """Return formatted time string."""
+        now = datetime.now()
+        time_str = now.strftime("%I:%M %p on %A, %B %d, %Y")
+        return ToolResult(
+            success=True,
+            output=f"The current time is {time_str}.",
+            metadata={"iso": now.isoformat()},
+        )
+
+
 class VolumeControlTool(BaseTool):
-    """Adjusts companion / system volume level."""
+    """Adjusts companion audio volume level."""
 
     name = "set_volume"
-    description = "Adjust or mute audio playback volume (0 to 100)."
+    description = "Adjust audio volume level (0 to 100)."
     requires_confirmation = False
     is_privileged = False
 
@@ -138,7 +232,7 @@ class ClipboardTool(BaseTool):
     """Safely reads text content from the system clipboard."""
 
     name = "read_clipboard"
-    description = "Read plain text currently copied to the system clipboard (e.g. game invite code or coordinate string)."
+    description = "Read plain text currently copied to the system clipboard."
     requires_confirmation = False
     is_privileged = False
 

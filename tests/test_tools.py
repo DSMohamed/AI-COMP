@@ -7,8 +7,11 @@ from gaming_ai.app.config import AppConfig
 from gaming_ai.models.provider import MockLLMProvider
 from gaming_ai.tools.base import BaseTool, ToolResult
 from gaming_ai.tools.builtin import (
+    AppLauncherTool,
     BrowserGuideTool,
+    NoteTakingTool,
     ScreenshotTool,
+    TimeDateTool,
     TimerTool,
     VolumeControlTool,
 )
@@ -64,6 +67,27 @@ async def test_timer_tool() -> None:
     res = await timer_tool.execute(seconds=2, label="Boss Respawn")
     assert res.success is True
     assert res.metadata["seconds"] == 2
+
+
+@pytest.mark.asyncio
+async def test_daily_tools(tmp_path: Path) -> None:
+    """Verify TimeDateTool, NoteTakingTool, and AppLauncherTool."""
+    time_tool = TimeDateTool()
+    res_time = await time_tool.execute()
+    assert res_time.success is True
+    assert "current time" in res_time.output.lower()
+
+    notes_file = tmp_path / "daily_notes.txt"
+    note_tool = NoteTakingTool(notes_file=notes_file)
+    res_note = await note_tool.execute(note="Remember to buy groceries at 5 PM")
+    assert res_note.success is True
+    assert notes_file.exists()
+    assert "Remember to buy groceries" in notes_file.read_text(encoding="utf-8")
+
+    app_tool = AppLauncherTool()
+    res_bad_app = await app_tool.execute(app_name="malicious_virus")
+    assert res_bad_app.success is False
+    assert "not in the approved whitelist" in res_bad_app.error
 
 
 @pytest.mark.asyncio

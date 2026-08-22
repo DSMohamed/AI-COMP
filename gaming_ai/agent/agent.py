@@ -20,9 +20,12 @@ from gaming_ai.agent.decision import DecisionEngine
 from gaming_ai.memory.manager import MemoryManager
 from gaming_ai.rag.retriever import RAGRetriever
 from gaming_ai.tools.builtin import (
+    AppLauncherTool,
     BrowserGuideTool,
     ClipboardTool,
+    NoteTakingTool,
     ScreenshotTool,
+    TimeDateTool,
     TimerTool,
     VolumeControlTool,
 )
@@ -69,7 +72,7 @@ class GamingCompanionAgent:
         if self.memory and not self.memory.current_session:
             self.memory.start_session(game="general")
 
-        # Sandboxed Computer Control Tools (Phase 9)
+        # Sandboxed Computer Control Tools (Phase 9 & Daily Productivity)
         self.tools = tools or ToolRegistry(
             enabled=self.config.tools.enabled,
             allow_privileged=self.config.tools.allow_privileged,
@@ -78,6 +81,9 @@ class GamingCompanionAgent:
         self.tools.register(ScreenshotTool())
         self.tools.register(TimerTool())
         self.tools.register(BrowserGuideTool())
+        self.tools.register(AppLauncherTool())
+        self.tools.register(NoteTakingTool())
+        self.tools.register(TimeDateTool())
         self.tools.register(VolumeControlTool())
         self.tools.register(ClipboardTool())
 
@@ -220,6 +226,29 @@ class GamingCompanionAgent:
         if not self.tools or not self.tools.enabled:
             return None
 
+        # Time & Date intent
+        if any(w in lower for w in ("what time", "current time", "what's the date", "what is the date", "what day is")):
+            res = await self.tools.execute("get_time")
+            return res.output if res.success else res.error
+
+        # Note taking intent
+        if "take a note" in lower or "note that" in lower or "write this down" in lower:
+            note_content = text
+            for prefix in ("take a note that", "take a note:", "take a note", "note that", "write this down:"):
+                if prefix in lower:
+                    idx = lower.find(prefix) + len(prefix)
+                    note_content = text[idx:].strip()
+                    break
+            res = await self.tools.execute("take_note", note=note_content)
+            return res.output if res.success else res.error
+
+        # App Launching intent
+        if "open" in lower or "launch" in lower or "start" in lower:
+            for app in ("notepad", "calculator", "calc", "code", "vscode", "spotify", "chrome", "edge", "terminal"):
+                if app in lower:
+                    res = await self.tools.execute("launch_app", app_name=app)
+                    return res.output if res.success else res.error
+
         # Screenshot intent
         if any(w in lower for w in ("take a screenshot", "take screenshot", "grab screenshot", "screenshot that", "clip that")):
             res = await self.tools.execute("take_screenshot")
@@ -233,7 +262,7 @@ class GamingCompanionAgent:
             if match:
                 val, unit = int(match.group(1)), match.group(2)
                 seconds = val * 60 if "min" in unit else val
-            res = await self.tools.execute("set_timer", seconds=seconds, label="Player Alert")
+            res = await self.tools.execute("set_timer", seconds=seconds, label="Alert")
             return res.output if res.success else res.error
 
         # Volume intent
