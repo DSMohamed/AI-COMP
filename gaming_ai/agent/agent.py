@@ -17,6 +17,7 @@ from gaming_ai.speech.microphone import MicrophoneStream
 from gaming_ai.speech.stt import SpeechToText
 from gaming_ai.speech.tts import TextToSpeechEngine
 from gaming_ai.agent.decision import DecisionEngine
+from gaming_ai.memory.manager import MemoryManager
 from gaming_ai.rag.retriever import RAGRetriever
 from gaming_ai.vision.event_detector import EventDetector, GameEvent
 from gaming_ai.vision.frame_analyzer import FrameAnalyzer
@@ -29,7 +30,7 @@ logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception (audio + screen + webcam), knowledge retrieval (RAG), reasoning, and speech."""
+    """Orchestrates perception (audio + screen + webcam), knowledge retrieval (RAG), persistent memory, and speech."""
 
     def __init__(
         self,
@@ -45,6 +46,7 @@ class GamingCompanionAgent:
         frame_analyzer: Optional[FrameAnalyzer] = None,
         decision_engine: Optional[DecisionEngine] = None,
         retriever: Optional[RAGRetriever] = None,
+        memory: Optional[MemoryManager] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -52,6 +54,11 @@ class GamingCompanionAgent:
             personality_engine=self.personality,
             history_limit=self.config.memory.short_term_history_limit,
         )
+
+        # Multi-layer Persistent Memory Manager (Phase 7)
+        self.memory = memory or (MemoryManager() if self.config.memory.enabled else None)
+        if self.memory and not self.memory.current_session:
+            self.memory.start_session(game="general")
 
         # Initialize LLM Provider
         self.llm = llm_provider or OllamaProvider(
@@ -130,6 +137,13 @@ class GamingCompanionAgent:
         # Run structured VLM analysis
         vision_result = await self.observe_screen(structured=True)
         event = self.event_detector.detect_event(vision_result, frame_delta=delta)
+
+        # Store event in persistent memory
+        if self.memory:
+            try:
+                self.memory.record_event(event)
+            except Exception as e:
+                logger.debug("Failed to record event to memory: %s", e)
 
         # Evaluate attention and commentary decision
         if self.decision_engine.should_comment(event, force=force_analysis):
@@ -229,6 +243,14 @@ class GamingCompanionAgent:
             except Exception as e:
                 logger.warning("RAG retrieval failed: %s", e)
 
+        # Retrieve long-term memory block if available
+        if self.memory:
+            try:
+                mem_block = self.memory.get_prompt_memory_block(game=self.context.current_game)
+                self.context.update_memory_context(mem_block)
+            except Exception as e:
+                logger.warning("Memory retrieval failed: %s", e)
+
         messages = self.context.build_context(current_user_input=user_text)
 
         # Stream response from LLM
@@ -249,9 +271,16 @@ class GamingCompanionAgent:
         total_time = (time.perf_counter() - start_time) * 1000.0
         logger.info("Companion (%s): '%s' (Latency: %.1fms)", self.config.personality.name, response_text, total_time)
 
-        # Persist turn in short-term history
+        # Persist turn in short-term history and SQLite database
         self.context.add_user_message(user_text)
         self.context.add_assistant_message(response_text)
+
+        if self.memory:
+            try:
+                self.memory.record_turn("user", user_text)
+                self.memory.record_turn("assistant", response_text)
+            except Exception as e:
+                logger.debug("Failed to persist turns to memory: %s", e)
 
         return response_text
 

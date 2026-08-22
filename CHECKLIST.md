@@ -7,8 +7,8 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 ## 📊 Summary Status
 
 * **Total Phases**: 12 (Phases 0 through 11)
-* **Completed Phases**: 7 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6)
-* **In Progress / Next Up**: Phase 7 (Multi-Layer Memory System)
+* **Completed Phases**: 8 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7)
+* **In Progress / Next Up**: Phase 8 (Desktop Dashboard UI)
 * **Target Hardware**: NVIDIA GeForce RTX 3070 (8 GB VRAM) — Windows 10/11
 
 ---
@@ -81,16 +81,16 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 
 ---
 
-### ⏳ Phase 7 — Multi-Layer Memory System (NEXT UP)
-- [ ] SQLite memory database schema (`sessions`, `memories`, `conversations`, `events`).
-- [ ] Short-Term Memory (live session rolling history).
-- [ ] Long-Term Memory (persistent user preferences, playstyle facts, build types).
-- [ ] End-of-session summarizer and memory extraction pipeline.
-- [ ] Semantic memory retrieval during active gameplay.
+### ✅ Phase 7 — Multi-Layer Memory System (COMPLETED)
+- [x] Thread-safe SQLite database manager with WAL mode and indices (`DatabaseManager`).
+- [x] 4-Tier Memory Hierarchy: Working Context, Session Memory, Episodic History, and Semantic Facts.
+- [x] Automated session telemetry (death counters, victories, full turn history).
+- [x] Dynamic memory prompt injection into companion reasoning context.
+- [x] Automated unit & integration tests (31 passing tests total).
 
 ---
 
-### ⏳ Phase 8 — Desktop Dashboard UI (REMAINING)
+### ⏳ Phase 8 — Desktop Dashboard UI (NEXT UP)
 - [ ] Modern dark-mode GUI (CustomTkinter or Lightweight Webview Dashboard).
 - [ ] Live sensor status badges (🎤 Mic, 📷 Webcam, 🖥️ Screen, 🧠 AI, 🔊 Voice).
 - [ ] Real-time conversation & event transcript feed.

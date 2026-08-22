@@ -24,6 +24,7 @@ class ContextEngine:
         self.latest_vision_context: Optional[str] = None
         self.latest_webcam_context: Optional[str] = None
         self.latest_rag_context: Optional[str] = None
+        self.latest_memory_context: Optional[str] = None
 
     def add_user_message(self, text: str) -> None:
         """Add a player utterance to history."""
@@ -45,6 +46,10 @@ class ContextEngine:
         """Update the latest retrieved game knowledge context."""
         self.latest_rag_context = rag_text
 
+    def update_memory_context(self, memory_text: Optional[str]) -> None:
+        """Update persistent long-term memories about the player."""
+        self.latest_memory_context = memory_text
+
     def clear_history(self) -> None:
         """Reset short-term conversation history."""
         self._history.clear()
@@ -55,6 +60,9 @@ class ContextEngine:
         """
         system_prompt = self.personality.build_system_prompt(current_game=self.current_game)
         
+        if self.latest_memory_context:
+            system_prompt += f"\n\n{self.latest_memory_context}"
+
         if self.latest_vision_context:
             system_prompt += f"\n\nCURRENT SCREEN OBSERVATION:\n{self.latest_vision_context}"
 
