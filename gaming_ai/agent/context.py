@@ -22,6 +22,7 @@ class ContextEngine:
         self._history: deque[Message] = deque(maxlen=history_limit * 2)
         self.current_game: Optional[str] = None
         self.latest_vision_context: Optional[str] = None
+        self.latest_webcam_context: Optional[str] = None
 
     def add_user_message(self, text: str) -> None:
         """Add a player utterance to history."""
@@ -35,6 +36,10 @@ class ContextEngine:
         """Update the latest perceived screen state."""
         self.latest_vision_context = visual_description
 
+    def update_webcam_context(self, reaction_summary: str) -> None:
+        """Update the latest perceived player webcam reaction."""
+        self.latest_webcam_context = reaction_summary
+
     def clear_history(self) -> None:
         """Reset short-term conversation history."""
         self._history.clear()
@@ -47,6 +52,9 @@ class ContextEngine:
         
         if self.latest_vision_context:
             system_prompt += f"\n\nCURRENT SCREEN OBSERVATION:\n{self.latest_vision_context}"
+
+        if self.latest_webcam_context:
+            system_prompt += f"\n\nPLAYER WEBCAM REACTION:\n{self.latest_webcam_context}"
 
         messages: List[Message] = [Message(role="system", content=system_prompt)]
 

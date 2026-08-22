@@ -126,7 +126,7 @@ See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development
 - [x] **Phase 0**: Research, VRAM budgeting, and architecture design.
 - [x] **Phase 1**: Voice Prototype (Microphone + VAD + faster-whisper + Ollama + TTS + Interruption).
 - [x] **Phase 2**: Vision Prototype (Screen capture + FrameAnalyzer + Ollama VLM).
-- [ ] **Phase 3**: Webcam reaction & player engagement monitoring.
+- [x] **Phase 3**: Webcam reaction & player engagement monitoring.
 - [ ] **Phase 4**: Event detection & interestingness scoring.
 - [ ] **Phase 5**: Autonomous gameplay commentary.
 - [ ] **Phase 6**: Game-specific RAG knowledge base (ChromaDB).

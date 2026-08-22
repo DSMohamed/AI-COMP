@@ -18,12 +18,14 @@ from gaming_ai.speech.stt import SpeechToText
 from gaming_ai.speech.tts import TextToSpeechEngine
 from gaming_ai.vision.screen_capture import ScreenCapture
 from gaming_ai.vision.vision_model import BaseVisionModel, OllamaVisionModel, VisionAnalysisResult
+from gaming_ai.vision.webcam import WebcamCapture
+from gaming_ai.vision.player_analyzer import PlayerAnalyzer, PlayerReaction
 
 logger = logging.getLogger("gaming_ai.agent")
 
 
 class GamingCompanionAgent:
-    """Orchestrates perception (audio + vision), reasoning, speech, and interruption handling."""
+    """Orchestrates perception (audio + screen + webcam), reasoning, speech, and interruption handling."""
 
     def __init__(
         self,
@@ -33,6 +35,8 @@ class GamingCompanionAgent:
         tts: Optional[TextToSpeechEngine] = None,
         vision_model: Optional[BaseVisionModel] = None,
         screen_capture: Optional[ScreenCapture] = None,
+        webcam: Optional[WebcamCapture] = None,
+        player_analyzer: Optional[PlayerAnalyzer] = None,
     ) -> None:
         self.config = config or get_config()
         self.personality = PersonalityEngine(self.config.personality)
@@ -74,10 +78,24 @@ class GamingCompanionAgent:
             timeout=45.0,
         )
 
+        # Webcam Subsystem (Optional / In-Memory only)
+        self.webcam = webcam or (WebcamCapture() if self.config.vision.webcam_enabled else None)
+        self.player_analyzer = player_analyzer or PlayerAnalyzer()
+
     def _on_speech_started(self) -> None:
         """Callback invoked immediately when user begins speaking into the microphone."""
         if self.config.tts.interrupt_on_speech:
             self.tts.interrupt()
+
+    async def observe_player(self) -> Optional[PlayerReaction]:
+        """Capture webcam and analyze player reaction in-memory."""
+        if self.webcam is None:
+            return None
+        frame = await asyncio.to_thread(self.webcam.capture_frame)
+        reaction = await asyncio.to_thread(self.player_analyzer.analyze_frame, frame)
+        self.context.update_webcam_context(reaction.summary)
+        logger.info("Player Reaction: %s (Emotion: %s, Engagement: %s)", reaction.summary, reaction.emotion, reaction.engagement)
+        return reaction
 
     def start_microphone(self) -> None:
         """Start listening to microphone input."""
