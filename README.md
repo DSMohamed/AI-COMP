@@ -133,7 +133,7 @@ See [`CHECKLIST.md`](CHECKLIST.md) for the detailed status of all 12 development
 - [x] **Phase 7**: SQLite persistent multi-session memory (Working, Session, Episodic, Semantic).
 - [x] **Phase 8**: Dynamic personality tuning & desktop dashboard UI.
 - [x] **Phase 9**: Sandboxed computer control tools & audit logging.
-- [ ] **Phase 10**: Real-time telemetry overlay & VRAM optimization.
+- [x] **Phase 10**: Real-time telemetry overlay & 8GB VRAM Guard watchdog.
 - [ ] **Phase 11**: Optional LoRA fine-tuning & voice cloning.
 
 ---

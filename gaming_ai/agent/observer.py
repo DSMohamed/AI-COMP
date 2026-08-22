@@ -8,6 +8,7 @@ import time
 from typing import Callable, Optional
 
 from gaming_ai.agent.agent import GamingCompanionAgent
+from gaming_ai.optimization.vram_guard import VRAMGuard, VRAMState
 from gaming_ai.vision.event_detector import GameEvent
 
 logger = logging.getLogger("gaming_ai.agent.observer")
@@ -22,11 +23,13 @@ class ContinuousObserver:
         screen_interval: float = 2.0,
         webcam_interval: float = 4.0,
         on_event_detected: Optional[Callable[[GameEvent], None]] = None,
+        vram_guard: Optional[VRAMGuard] = None,
     ) -> None:
         self.agent = agent
         self.screen_interval = screen_interval
         self.webcam_interval = webcam_interval
         self.on_event_detected = on_event_detected
+        self.vram_guard = vram_guard or VRAMGuard()
 
         self._is_running = False
         self._tasks: list[asyncio.Task] = []
@@ -34,22 +37,28 @@ class ContinuousObserver:
 
     async def _screen_observation_worker(self) -> None:
         """Background worker periodically polling screen for significant game events."""
-        logger.info("Screen observer worker started (Interval: %.1fs)", self.screen_interval)
+        logger.info("Screen observer worker started (Base Interval: %.1fs)", self.screen_interval)
         while self._is_running:
             try:
+                # Check VRAM state to dynamically throttle if needed
+                vram_state = self.vram_guard.check_vram()
+                current_interval = self.vram_guard.get_suggested_screen_interval()
+
                 # If player is currently speaking or TTS is active, pause autonomous screen checks
                 if self._user_speaking_flag.is_set() or self.agent.player.is_speaking:
                     await asyncio.sleep(0.5)
                     continue
 
-                event = await self.agent.process_gameplay_frame(force_analysis=False)
-                if event is not None and self.on_event_detected:
-                    self.on_event_detected(event)
+                if vram_state != VRAMState.CRITICAL:
+                    event = await self.agent.process_gameplay_frame(force_analysis=False)
+                    if event is not None and self.on_event_detected:
+                        self.on_event_detected(event)
 
             except Exception as e:
                 logger.error("Error in screen observation worker: %s", e)
+                current_interval = self.screen_interval
 
-            await asyncio.sleep(self.screen_interval)
+            await asyncio.sleep(current_interval)
 
     async def _webcam_observation_worker(self) -> None:
         """Background worker periodically polling webcam for player emotional cues."""

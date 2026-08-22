@@ -18,6 +18,7 @@ Welcome to the technical documentation for the **Local AI Gaming Companion**, a 
 | [🧠 Multi-Layer Memory System](memory_system.md) | 4-tier memory hierarchy (Working, Session, Episodic, Semantic) with SQLite persistence. |
 | [🖥️ Desktop Dashboard UI](dashboard_ui.md) | Glassmorphism web dashboard, live WebSocket telemetry, sensor badges, and sliders. |
 | [🛠️ Sandboxed Computer Tools](computer_tools.md) | Safe tools framework, screenshot capture, timers, browser guides, and audit logging. |
+| [⚡ Performance & VRAM Guard](performance_and_telemetry.md) | Latency targets, hardware monitoring, and dynamic 8 GB VRAM protection watchdog. |
 | [🧠 Models & Providers](models_and_providers.md) | Ollama LLM provider abstraction, model configuration (`llama3.2:3b`, `qwen2.5:7b`), and custom provider guide. |
 | [🎭 Personality & Agent](personality_and_agent.md) | Gaming companion persona, tone sliders (sarcasm, humor, energy, slang), and context aggregation. |
 | [⚙️ Configuration Guide](configuration.md) | Detailed schema reference for `config.yaml` and runtime customization. |
