@@ -7,8 +7,8 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 ## 📊 Summary Status
 
 * **Total Phases**: 12 (Phases 0 through 11)
-* **Completed Phases**: 5 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4)
-* **In Progress / Next Up**: Phase 5 (Autonomous Commentary Loop)
+* **Completed Phases**: 6 / 12 (Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5)
+* **In Progress / Next Up**: Phase 6 (Game-Specific RAG Knowledge Base)
 * **Target Hardware**: NVIDIA GeForce RTX 3070 (8 GB VRAM) — Windows 10/11
 
 ---
@@ -62,15 +62,16 @@ This checklist tracks the implementation progress of the **Local AI Gaming Compa
 
 ---
 
-### ⏳ Phase 5 — Autonomous Commentary (NEXT UP)
-- [ ] Background observation loop without infinite blocking.
-- [ ] Attention thresholding (ignore 0.0–0.6, consider 0.6–0.8, talk on 0.8–1.0).
-- [ ] Speech cooldown timer (minimum interval between autonomous comments).
-- [ ] Priority resolution (User Speech > Major Events > Minor Events).
+### ✅ Phase 5 — Autonomous Commentary (COMPLETED)
+- [x] Decoupled async observation orchestrator (`ContinuousObserver`).
+- [x] Multi-worker concurrency (Voice listener, screen observer, webcam observer).
+- [x] Preemption priority (direct player speech pauses autonomous tasks).
+- [x] Multimodal CLI companion mode (`--mode companion`).
+- [x] Automated unit & integration tests (24 passing tests total).
 
 ---
 
-### ⏳ Phase 6 — Game-Specific RAG Knowledge Base (REMAINING)
+### ⏳ Phase 6 — Game-Specific RAG Knowledge Base (NEXT UP)
 - [ ] Document ingestion pipeline (TXT, Markdown, Wiki guides).
 - [ ] Semantic chunking preserving boss/item/mechanics metadata.
 - [ ] Vector database integration (ChromaDB / LanceDB).
