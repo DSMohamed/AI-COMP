@@ -91,7 +91,7 @@ class OllamaProvider(BaseLLMProvider):
         max_tokens: int = 250,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
-        """Stream tokens asynchronously from Ollama."""
+        """Stream tokens asynchronously from Ollama with graceful fault-tolerance."""
         payload = {
             "model": self.model_name,
             "messages": self._format_messages(messages),
@@ -102,19 +102,26 @@ class OllamaProvider(BaseLLMProvider):
             },
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        client_timeout = httpx.Timeout(timeout=60.0, connect=10.0, read=60.0)
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
             try:
                 async with client.stream("POST", f"{self.host}/api/chat", json=payload) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
                         if not line:
                             continue
-                        chunk = json.loads(line)
-                        content = chunk.get("message", {}).get("content", "")
-                        if content:
-                            yield content
-                        if chunk.get("done", False):
-                            break
+                        try:
+                            chunk = json.loads(line)
+                            content = chunk.get("message", {}).get("content", "")
+                            if content:
+                                yield content
+                            if chunk.get("done", False):
+                                break
+                        except Exception:
+                            continue
+            except httpx.ReadTimeout:
+                logger.warning("Ollama generation timed out after 60s")
+                yield "Brain lagged for a sec! Let's get back into it."
             except Exception as e:
                 logger.error("Streaming error with Ollama: %s", e)
-                raise
+                yield "I lost connection to the brain for a second! Still with you though."

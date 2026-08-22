@@ -99,10 +99,13 @@ class ContinuousObserver:
                             if on_transcription:
                                 on_transcription(text, latency)
 
-                            # Directly process turn and speak
-                            response = await self.agent.respond_to_text(text, speak=True)
-                            if on_response:
-                                on_response(response)
+                            # Directly process turn and speak safely
+                            try:
+                                response = await self.agent.respond_to_text(text, speak=True)
+                                if on_response:
+                                    on_response(response)
+                            except Exception as resp_err:
+                                logger.error("Error processing voice turn: %s", resp_err)
                     finally:
                         self._user_speaking_flag.clear()
 

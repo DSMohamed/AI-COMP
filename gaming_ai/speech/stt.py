@@ -1,8 +1,9 @@
-"""Speech-to-Text transcriber using faster-whisper (CTranslate2)."""
+"""Speech-to-Text transcriber using faster-whisper (CTranslate2) with hallucination filtering."""
 
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Optional, Tuple
 import numpy as np
@@ -11,7 +12,7 @@ logger = logging.getLogger("gaming_ai.speech.stt")
 
 
 class SpeechToText:
-    """Local STT engine powered by faster-whisper."""
+    """Local STT engine powered by faster-whisper with hallucination suppression."""
 
     def __init__(
         self,
@@ -60,6 +61,33 @@ class SpeechToText:
                 compute_type="int8",
             )
 
+    def _is_hallucination(self, text: str) -> bool:
+        """Detect and discard common Whisper repetitive silence hallucinations."""
+        clean = text.strip().lower()
+        if not clean or len(clean) < 2:
+            return True
+
+        # Check for single word repetition (e.g. "Okay. Okay. Okay. Okay." or "you you you")
+        words = re.findall(r"\b\w+\b", clean)
+        if len(words) >= 4:
+            unique_words = set(words)
+            if len(unique_words) <= 2:  # 4+ words but only 1 or 2 unique words
+                return True
+
+        # Common Whisper phantom subtitles during silence
+        phantom_phrases = [
+            "thank you for watching",
+            "thanks for watching",
+            "please subscribe",
+            "like and subscribe",
+            "subtitles by",
+            "translated by",
+        ]
+        if any(p in clean for p in phantom_phrases):
+            return True
+
+        return False
+
     def transcribe(self, audio: np.ndarray, language: str = "en") -> Tuple[str, float]:
         """
         Transcribe a 1D audio array (16kHz float32).
@@ -78,11 +106,17 @@ class SpeechToText:
             language=language,
             condition_on_previous_text=False,
             temperature=0.0,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
         )
 
         text_parts = [segment.text.strip() for segment in segments]
         transcription = " ".join(text_parts).strip()
         latency_ms = (time.perf_counter() - start_time) * 1000.0
+
+        if self._is_hallucination(transcription):
+            logger.debug("Filtered hallucination: '%s'", transcription)
+            return "", latency_ms
 
         logger.debug("Transcribed in %.2fms: '%s'", latency_ms, transcription)
         return transcription, latency_ms
